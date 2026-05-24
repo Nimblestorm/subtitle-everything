@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: transparent;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding-bottom: 40px;
+      font-family: Arial, sans-serif;
+    }
+
+    #subtitles {
+      max-width: 90%;
+      text-align: center;
+    }
+
+    .line {
+      display: block;
+      background: rgba(0, 0, 0, 0.75);
+      color: #ffffff;
+      font-size: 36px;
+      font-weight: bold;
+      padding: 6px 18px;
+      border-radius: 8px;
+      margin: 4px auto;
+      text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.9);
+      max-width: fit-content;
+    }
+  </style>
+</head>
+<body>
+  <div id="subtitles"></div>
+  <script>
+    const container = document.getElementById('subtitles');
+
+    function escapeHtml(text) {
+      return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    function render(lines) {
+      container.innerHTML = lines
+        .map(line => `<span class="line">${escapeHtml(line)}</span>`)
+        .join('');
+    }
+
+    function connect() {
+      const ws = new WebSocket(`ws://${location.host}/ws`);
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          render(data.lines || []);
+        } catch (e) {
+          console.error('Bad message', e);
+        }
+      };
+
+      ws.onclose = () => {
+        setTimeout(connect, 1000);
+      };
+
+      ws.onerror = () => {
+        ws.close();
+      };
+    }
+
+    connect();
+  </script>
+</body>
+</html>
