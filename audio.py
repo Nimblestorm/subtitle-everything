@@ -32,9 +32,12 @@ def start_microphone_capture(
         buffer.append(indata[:, 0].copy())
         total = sum(len(b) for b in buffer)
         if total >= CHUNK_SAMPLES:
-            chunk = np.concatenate(buffer)[:CHUNK_SAMPLES].astype(np.float32)
-            audio_queue.put(chunk)
+            combined = np.concatenate(buffer)
+            audio_queue.put(combined[:CHUNK_SAMPLES].astype(np.float32))
+            remainder = combined[CHUNK_SAMPLES:]
             buffer.clear()
+            if len(remainder):
+                buffer.append(remainder)
 
     device_idx = None if device == "default" else int(device)
 
@@ -54,7 +57,7 @@ def _resample(audio: np.ndarray, from_rate: int, to_rate: int) -> np.ndarray:
         return audio
     new_length = int(len(audio) * to_rate / from_rate)
     return np.interp(
-        np.linspace(0, len(audio), new_length),
+        np.linspace(0, len(audio) - 1, new_length),
         np.arange(len(audio)),
         audio,
     ).astype(np.float32)
@@ -109,9 +112,12 @@ def start_loopback_capture(
             buffer.append(resampled)
             total = sum(len(b) for b in buffer)
             if total >= CHUNK_SAMPLES:
-                chunk = np.concatenate(buffer)[:CHUNK_SAMPLES]
-                audio_queue.put(chunk)
+                combined = np.concatenate(buffer)
+                audio_queue.put(combined[:CHUNK_SAMPLES])
+                remainder = combined[CHUNK_SAMPLES:]
                 buffer.clear()
+                if len(remainder):
+                    buffer.append(remainder)
             return (None, pyaudio.paContinue)
 
         stream = pa.open(
