@@ -44,3 +44,23 @@ def test_default_max_lines_is_three():
     for i in range(5):
         buf.push(f"line {i}")
     assert len(buf.get_lines()) == 3
+
+
+def test_max_lines_zero_raises():
+    with pytest.raises(ValueError, match="max_lines must be >= 1"):
+        SubtitleBuffer(max_lines=0)
+
+
+def test_max_lines_one_overwrites_previous():
+    buf = SubtitleBuffer(max_lines=1)
+    buf.push("first")
+    buf.push("second")
+    assert buf.get_lines() == ["second"]
+
+
+def test_push_after_clear_starts_fresh():
+    buf = SubtitleBuffer(max_lines=3)
+    buf.push("old line")
+    buf.clear()
+    buf.push("new line")
+    assert buf.get_lines() == ["new line"]

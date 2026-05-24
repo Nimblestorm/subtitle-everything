@@ -87,5 +87,7 @@ def load_config(path: str = "config.toml") -> AppConfig:
         raise ValueError(f"config.toml: [display] lines must be an integer, got {cfg.display.lines!r}")
     if not isinstance(cfg.translation.enabled, bool):
         raise ValueError(f"config.toml: [translation] enabled must be a boolean, got {cfg.translation.enabled!r}")
+    if cfg.display.lines < 1:
+        raise ValueError(f"config.toml: [display] lines must be >= 1, got {cfg.display.lines!r}")
 
     return cfg
