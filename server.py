@@ -3,12 +3,15 @@ import json
 import queue
 from pathlib import Path
 
-from aiohttp import web, WSMsgType
+from aiohttp import web
 
 
 async def create_app(subtitle_queue: queue.Queue) -> web.Application:
     clients: set[web.WebSocketResponse] = set()
     overlay_path = Path(__file__).parent / "overlay.html"
+
+    if not overlay_path.is_file():
+        raise RuntimeError(f"overlay.html not found at {overlay_path}")
 
     async def index(request: web.Request) -> web.FileResponse:
         return web.FileResponse(overlay_path)
