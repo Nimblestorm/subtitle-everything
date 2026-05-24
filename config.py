@@ -1,5 +1,5 @@
 import sys
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields as dc_fields
 from pathlib import Path
 
 if sys.version_info >= (3, 11):
@@ -60,6 +60,11 @@ class AppConfig:
     translation: TranslationConfig = field(default_factory=TranslationConfig)
 
 
+def _build(cls, data: dict):
+    known = {f.name for f in dc_fields(cls)}
+    return cls(**{k: v for k, v in data.items() if k in known})
+
+
 def load_config(path: str = "config.toml") -> AppConfig:
     config_path = Path(path)
     if not config_path.exists():
@@ -69,9 +74,18 @@ def load_config(path: str = "config.toml") -> AppConfig:
     with open(config_path, "rb") as f:
         data = tomllib.load(f)
 
-    return AppConfig(
-        audio=AudioConfig(**data.get("audio", {})),
-        transcription=TranscriptionConfig(**data.get("transcription", {})),
-        display=DisplayConfig(**data.get("display", {})),
-        translation=TranslationConfig(**data.get("translation", {})),
+    cfg = AppConfig(
+        audio=_build(AudioConfig, data.get("audio", {})),
+        transcription=_build(TranscriptionConfig, data.get("transcription", {})),
+        display=_build(DisplayConfig, data.get("display", {})),
+        translation=_build(TranslationConfig, data.get("translation", {})),
     )
+
+    if not isinstance(cfg.display.port, int):
+        raise ValueError(f"config.toml: [display] port must be an integer, got {cfg.display.port!r}")
+    if not isinstance(cfg.display.lines, int):
+        raise ValueError(f"config.toml: [display] lines must be an integer, got {cfg.display.lines!r}")
+    if not isinstance(cfg.translation.enabled, bool):
+        raise ValueError(f"config.toml: [translation] enabled must be a boolean, got {cfg.translation.enabled!r}")
+
+    return cfg

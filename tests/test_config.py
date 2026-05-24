@@ -34,3 +34,23 @@ def test_load_config_partial_file_uses_defaults(tmp_path):
     cfg = load_config(str(config_file))
     assert cfg.audio.mode == "both"
     assert cfg.transcription.model == "base"  # default
+
+
+def test_load_config_ignores_unknown_keys(tmp_path):
+    config_file = tmp_path / "config.toml"
+    config_file.write_text(
+        '[audio]\nmode = "microphone"\nunknown_key = "value"\n',
+        encoding="utf-8",
+    )
+    cfg = load_config(str(config_file))
+    assert cfg.audio.mode == "microphone"
+
+
+def test_load_config_raises_on_invalid_port_type(tmp_path):
+    config_file = tmp_path / "config.toml"
+    config_file.write_text(
+        '[display]\nport = "not_an_int"\nlines = 3\n',
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="port must be an integer"):
+        load_config(str(config_file))
