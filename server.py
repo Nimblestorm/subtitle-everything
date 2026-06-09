@@ -5,7 +5,7 @@ from pathlib import Path
 
 from aiohttp import web
 
-from config import AppConfig, AudioConfig, TranscriptionConfig, DisplayConfig, TranslationConfig, _build, _validate_config, write_config
+from config import AppConfig, AudioConfig, TranscriptionConfig, DisplayConfig, TranslationConfig, build_config_section, validate_config, write_config
 
 
 def _config_to_dict(config: AppConfig) -> dict:
@@ -55,7 +55,7 @@ def _display_config_message(config: AppConfig) -> dict:
     }
 
 
-_RESTART_KEYS = {"audio", "transcription"}
+_BROADCASTER_KEY = web.AppKey("broadcaster_task")
 
 
 async def create_app(
@@ -90,17 +90,17 @@ async def create_app(
 
         current = _config_to_dict(config)
         try:
-            new_audio = _build(AudioConfig, {**current["audio"], **body.get("audio", {})})
-            new_transcription = _build(TranscriptionConfig, {**current["transcription"], **body.get("transcription", {})})
-            new_display = _build(DisplayConfig, {**current["display"], **body.get("display", {})})
-            new_translation = _build(TranslationConfig, {**current["translation"], **body.get("translation", {})})
+            new_audio = build_config_section(AudioConfig, {**current["audio"], **body.get("audio", {})})
+            new_transcription = build_config_section(TranscriptionConfig, {**current["transcription"], **body.get("transcription", {})})
+            new_display = build_config_section(DisplayConfig, {**current["display"], **body.get("display", {})})
+            new_translation = build_config_section(TranslationConfig, {**current["translation"], **body.get("translation", {})})
         except (TypeError, ValueError) as e:
             return web.json_response({"error": str(e)}, status=400)
 
         new_cfg = AppConfig(audio=new_audio, transcription=new_transcription,
                             display=new_display, translation=new_translation)
         try:
-            _validate_config(new_cfg)
+            validate_config(new_cfg)
         except ValueError as e:
             return web.json_response({"error": str(e)}, status=400)
 
@@ -169,10 +169,10 @@ async def create_app(
     app.router.add_get("/ws", websocket_handler)
 
     async def on_startup(app: web.Application) -> None:
-        app["broadcaster_task"] = asyncio.create_task(broadcaster())
+        app[_BROADCASTER_KEY] = asyncio.create_task(broadcaster())
 
     async def on_cleanup(app: web.Application) -> None:
-        task = app.get("broadcaster_task")
+        task = app.get(_BROADCASTER_KEY)
         if task:
             task.cancel()
             try:

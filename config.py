@@ -90,12 +90,12 @@ class AppConfig:
     translation: TranslationConfig = field(default_factory=TranslationConfig)
 
 
-def _build(cls, data: dict):
+def build_config_section(cls, data: dict):
     known = {f.name for f in dc_fields(cls)}
     return cls(**{k: v for k, v in data.items() if k in known})
 
 
-def _validate_config(cfg: "AppConfig") -> None:
+def validate_config(cfg: "AppConfig") -> None:
     if not isinstance(cfg.display.port, int):
         raise ValueError(f"[display] port must be an integer, got {cfg.display.port!r}")
     if not isinstance(cfg.display.lines, int):
@@ -162,11 +162,11 @@ def load_config(path: str = "config.toml") -> "AppConfig":
         data = tomllib.load(f)
 
     cfg = AppConfig(
-        audio=_build(AudioConfig, data.get("audio", {})),
-        transcription=_build(TranscriptionConfig, data.get("transcription", {})),
-        display=_build(DisplayConfig, data.get("display", {})),
-        translation=_build(TranslationConfig, data.get("translation", {})),
+        audio=build_config_section(AudioConfig, data.get("audio", {})),
+        transcription=build_config_section(TranscriptionConfig, data.get("transcription", {})),
+        display=build_config_section(DisplayConfig, data.get("display", {})),
+        translation=build_config_section(TranslationConfig, data.get("translation", {})),
     )
 
-    _validate_config(cfg)
+    validate_config(cfg)
     return cfg
