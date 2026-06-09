@@ -54,3 +54,64 @@ def test_load_config_raises_on_invalid_port_type(tmp_path):
     )
     with pytest.raises(ValueError, match="port must be an integer"):
         load_config(str(config_file))
+
+
+def test_display_config_new_defaults(tmp_path):
+    cfg = load_config(str(tmp_path / "config.toml"))
+    assert cfg.display.font_family == "Arial"
+    assert cfg.display.font_size == 36
+    assert cfg.display.font_color == "#ffffff"
+    assert cfg.display.bg_color == "#000000"
+    assert cfg.display.bg_opacity == 0.75
+    assert cfg.display.max_chars_per_line == 80
+    assert cfg.display.fade_duration == 0.0
+
+
+def test_translation_config_new_defaults(tmp_path):
+    cfg = load_config(str(tmp_path / "config.toml"))
+    assert cfg.translation.url == "http://localhost:5000"
+    assert cfg.translation.source_lang == "en"
+    assert cfg.translation.target_lang == "es"
+    assert cfg.translation.dual_language is False
+
+
+def test_load_config_raises_on_invalid_font_size(tmp_path):
+    f = tmp_path / "config.toml"
+    f.write_text("[display]\nfont_size = 4\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="font_size"):
+        load_config(str(f))
+
+
+def test_load_config_raises_on_invalid_bg_opacity(tmp_path):
+    f = tmp_path / "config.toml"
+    f.write_text("[display]\nbg_opacity = 1.5\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="bg_opacity"):
+        load_config(str(f))
+
+
+def test_load_config_raises_on_invalid_font_color(tmp_path):
+    f = tmp_path / "config.toml"
+    f.write_text('[display]\nfont_color = "red"\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="font_color"):
+        load_config(str(f))
+
+
+def test_load_config_raises_on_invalid_max_chars(tmp_path):
+    f = tmp_path / "config.toml"
+    f.write_text("[display]\nmax_chars_per_line = 5\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="max_chars_per_line"):
+        load_config(str(f))
+
+
+def test_write_config_roundtrip(tmp_path):
+    from config import write_config, AppConfig, DisplayConfig, TranslationConfig
+    cfg = AppConfig()
+    cfg.display.font_size = 48
+    cfg.display.font_color = "#ffff00"
+    cfg.translation.target_lang = "fr"
+    p = str(tmp_path / "out.toml")
+    write_config(cfg, p)
+    loaded = load_config(p)
+    assert loaded.display.font_size == 48
+    assert loaded.display.font_color == "#ffff00"
+    assert loaded.translation.target_lang == "fr"
