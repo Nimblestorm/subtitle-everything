@@ -41,6 +41,11 @@ dual_language = false
 _HEX_COLOR_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
 
 
+def _toml_str(value: str) -> str:
+    """Escape string values for safe TOML output."""
+    return value.replace("\\", "\\\\").replace('"', '\\"')
+
+
 @dataclass
 class AudioConfig:
     mode: str = "microphone"
@@ -117,31 +122,31 @@ def write_config(config: "AppConfig", path: str = "config.toml") -> None:
     a, tr, d, t = config.audio, config.transcription, config.display, config.translation
     toml = (
         f'[audio]\n'
-        f'mode = "{a.mode}"\n'
-        f'mic_device = "{a.mic_device}"\n'
-        f'loopback_device = "{a.loopback_device}"\n'
+        f'mode = "{_toml_str(a.mode)}"\n'
+        f'mic_device = "{_toml_str(a.mic_device)}"\n'
+        f'loopback_device = "{_toml_str(a.loopback_device)}"\n'
         f'\n'
         f'[transcription]\n'
-        f'model = "{tr.model}"\n'
-        f'language = "{tr.language}"\n'
-        f'device = "{tr.device}"\n'
+        f'model = "{_toml_str(tr.model)}"\n'
+        f'language = "{_toml_str(tr.language)}"\n'
+        f'device = "{_toml_str(tr.device)}"\n'
         f'\n'
         f'[display]\n'
         f'lines = {d.lines}\n'
         f'port = {d.port}\n'
-        f'font_family = "{d.font_family}"\n'
+        f'font_family = "{_toml_str(d.font_family)}"\n'
         f'font_size = {d.font_size}\n'
-        f'font_color = "{d.font_color}"\n'
-        f'bg_color = "{d.bg_color}"\n'
+        f'font_color = "{_toml_str(d.font_color)}"\n'
+        f'bg_color = "{_toml_str(d.bg_color)}"\n'
         f'bg_opacity = {d.bg_opacity}\n'
         f'max_chars_per_line = {d.max_chars_per_line}\n'
         f'fade_duration = {d.fade_duration}\n'
         f'\n'
         f'[translation]\n'
         f'enabled = {"true" if t.enabled else "false"}\n'
-        f'url = "{t.url}"\n'
-        f'source_lang = "{t.source_lang}"\n'
-        f'target_lang = "{t.target_lang}"\n'
+        f'url = "{_toml_str(t.url)}"\n'
+        f'source_lang = "{_toml_str(t.source_lang)}"\n'
+        f'target_lang = "{_toml_str(t.target_lang)}"\n'
         f'dual_language = {"true" if t.dual_language else "false"}\n'
     )
     Path(path).write_text(toml, encoding="utf-8")
