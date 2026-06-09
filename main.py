@@ -18,14 +18,15 @@ def _print_startup(config: AppConfig) -> None:
     elif mode == "loopback":
         audio_desc = f"loopback ({config.audio.loopback_device})"
     else:
-        audio_desc = f"microphone + loopback"
+        audio_desc = "microphone + loopback"
 
     print("\n[Subtitle Everything]")
     print(f"  Model:    {config.transcription.model} ({config.transcription.device})")
     print(f"  Audio:    {audio_desc}")
     print(f"  Language: {config.transcription.language}")
     print(f"  Overlay:  http://localhost:{config.display.port}")
-    print("\nAdd this URL as a Browser Source in OBS.")
+    print(f"  Settings: http://localhost:{config.display.port}/settings")
+    print("\nAdd the Overlay URL as a Browser Source in OBS.")
     print("Press Ctrl+C to stop.\n")
 
 
@@ -43,7 +44,7 @@ def _resolve_device(config: AppConfig) -> AppConfig:
 
 
 async def _run_server(config: AppConfig, subtitle_queue: queue.Queue) -> None:
-    app = await create_app(subtitle_queue)
+    app = await create_app(subtitle_queue, config)
     runner = web.AppRunner(app)
     await runner.setup()
     site = web.TCPSite(runner, "localhost", config.display.port)
@@ -87,9 +88,7 @@ def main() -> None:
 
     threads.append(threading.Thread(
         target=start_transcription,
-        args=(audio_queue, subtitle_queue, subtitle_buffer,
-              config.transcription.model, config.transcription.language,
-              config.transcription.device, stop_event),
+        args=(audio_queue, subtitle_queue, subtitle_buffer, config, stop_event),
         daemon=True,
         name="transcriber",
     ))
