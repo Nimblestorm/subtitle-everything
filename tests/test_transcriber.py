@@ -6,7 +6,6 @@ from unittest.mock import MagicMock, patch
 
 
 def _make_mock_model(segments_text: list[str]):
-    fake_segment = MagicMock()
     model = MagicMock()
     segments = [MagicMock(text=f" {t} ") for t in segments_text]
     model.transcribe.return_value = (iter(segments), MagicMock())
