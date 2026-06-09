@@ -101,7 +101,7 @@ async def create_app(
                             display=new_display, translation=new_translation)
         try:
             validate_config(new_cfg)
-        except ValueError as e:
+        except (ValueError, TypeError) as e:
             return web.json_response({"error": str(e)}, status=400)
 
         new_dict = _config_to_dict(new_cfg)
