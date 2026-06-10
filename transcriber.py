@@ -33,10 +33,12 @@ def start_transcription(
     subtitle_buffer: SubtitleBuffer,
     config: AppConfig,
     stop_event: threading.Event,
+    source: str = "mic",
 ) -> None:
     compute_type = "float16" if config.transcription.device == "cuda" else "int8"
+    model_name = config.transcription.mic_model if source == "mic" else config.transcription.loopback_model
     model = WhisperModel(
-        config.transcription.mic_model,
+        model_name,
         device=config.transcription.device,
         compute_type=compute_type,
     )
@@ -76,6 +78,7 @@ def start_transcription(
 
         subtitle_queue.put({
             "type": "subtitle",
+            "source": source,
             "lines": lines,
             "translated_lines": translated_lines,
         })

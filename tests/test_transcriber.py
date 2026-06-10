@@ -63,6 +63,7 @@ def test_transcriber_pushes_text_to_subtitle_queue():
         t.join(timeout=2)
 
     assert result["type"] == "subtitle"
+    assert result["source"] == "mic"
     assert result["lines"] == ["hello world"]
     assert result["translated_lines"] == []
 
@@ -122,3 +123,32 @@ def test_transcriber_uses_auto_language():
 
     call_kwargs = mock_model.transcribe.call_args[1]
     assert call_kwargs.get("language") is None
+
+
+def test_transcriber_tags_message_with_source():
+    from transcriber import start_transcription
+    from buffer import SubtitleBuffer
+    from config import AppConfig
+
+    audio_queue = queue.Queue()
+    subtitle_queue = queue.Queue()
+    stop_event = threading.Event()
+    buf = SubtitleBuffer(max_lines=3)
+    config = AppConfig()
+
+    audio_queue.put(np.zeros(48000, dtype=np.float32))
+    mock_model = _make_mock_model(["hello"])
+
+    with patch("transcriber.WhisperModel", lambda *a, **kw: mock_model):
+        t = threading.Thread(
+            target=start_transcription,
+            args=(audio_queue, subtitle_queue, buf, config, stop_event),
+            kwargs={"source": "loopback"},
+            daemon=True,
+        )
+        t.start()
+        result = subtitle_queue.get(timeout=3.0)
+        stop_event.set()
+        t.join(timeout=2)
+
+    assert result["source"] == "loopback"
