@@ -152,3 +152,38 @@ def test_transcriber_tags_message_with_source():
         t.join(timeout=2)
 
     assert result["source"] == "loopback"
+
+
+def test_transcriber_uses_loopback_model_for_loopback_source():
+    from transcriber import start_transcription
+    from buffer import SubtitleBuffer
+    from config import AppConfig, TranscriptionConfig
+
+    audio_queue = queue.Queue()
+    subtitle_queue = queue.Queue()
+    stop_event = threading.Event()
+    buf = SubtitleBuffer(max_lines=3)
+    config = AppConfig()
+    config.transcription = TranscriptionConfig(mic_model="base", loopback_model="tiny")
+
+    audio_queue.put(np.zeros(48000, dtype=np.float32))
+    mock_model = _make_mock_model(["hello"])
+    captured = {}
+
+    def fake_whisper(model_name, **kw):
+        captured["model_name"] = model_name
+        return mock_model
+
+    with patch("transcriber.WhisperModel", fake_whisper):
+        t = threading.Thread(
+            target=start_transcription,
+            args=(audio_queue, subtitle_queue, buf, config, stop_event),
+            kwargs={"source": "loopback"},
+            daemon=True,
+        )
+        t.start()
+        subtitle_queue.get(timeout=3.0)
+        stop_event.set()
+        t.join(timeout=2)
+
+    assert captured["model_name"] == "tiny"
