@@ -21,12 +21,12 @@ def _print_startup(config: AppConfig) -> None:
         audio_desc = "microphone + loopback"
 
     print("\n[Subtitle Everything]")
-    print(f"  Model:    mic={config.transcription.mic_model}, loopback={config.transcription.loopback_model} ({config.transcription.device})")
+    print(f"  Model:    mic={config.transcription.mic_model} loopback={config.transcription.loopback_model} ({config.transcription.device})")
     print(f"  Audio:    {audio_desc}")
     print(f"  Language: {config.transcription.language}")
     print(f"  Overlay:  http://localhost:{config.display.port}")
     print(f"  Settings: http://localhost:{config.display.port}/settings")
-    print("\nAdd the Overlay URL as a Browser Source in OBS.")
+    print("\nAdd this URL as a Browser Source in OBS.")
     print("Press Ctrl+C to stop.\n")
 
 
@@ -61,37 +61,77 @@ def main() -> None:
     config = load_config()
     config = _resolve_device(config)
 
-    audio_queue: queue.Queue = queue.Queue()
     subtitle_queue: queue.Queue = queue.Queue()
     stop_event = threading.Event()
-    subtitle_buffer = SubtitleBuffer(max_lines=config.display.lines)
 
     _print_startup(config)
 
     threads: list[threading.Thread] = []
 
-    if config.audio.mode in ("microphone", "both"):
+    if config.audio.mode == "both":
+        print(
+            'Warning: dual-source mode loads two Whisper models. '
+            'Consider using "tiny" for one or both sources if you experience high memory usage.\n'
+        )
+        mic_audio_queue: queue.Queue = queue.Queue()
+        loopback_audio_queue: queue.Queue = queue.Queue()
+        mic_buffer = SubtitleBuffer(max_lines=config.display.lines)
+        loopback_buffer = SubtitleBuffer(max_lines=config.display.lines)
+
         threads.append(threading.Thread(
             target=start_microphone_capture,
-            args=(audio_queue, config.audio.mic_device, stop_event),
+            args=(mic_audio_queue, config.audio.mic_device, stop_event),
             daemon=True,
             name="mic-capture",
         ))
-
-    if config.audio.mode in ("loopback", "both"):
         threads.append(threading.Thread(
             target=start_loopback_capture,
-            args=(audio_queue, config.audio.loopback_device, stop_event),
+            args=(loopback_audio_queue, config.audio.loopback_device, stop_event),
             daemon=True,
             name="loopback-capture",
         ))
+        threads.append(threading.Thread(
+            target=start_transcription,
+            args=(mic_audio_queue, subtitle_queue, mic_buffer, config, stop_event),
+            kwargs={"source": "mic"},
+            daemon=True,
+            name="transcriber-mic",
+        ))
+        threads.append(threading.Thread(
+            target=start_transcription,
+            args=(loopback_audio_queue, subtitle_queue, loopback_buffer, config, stop_event),
+            kwargs={"source": "loopback"},
+            daemon=True,
+            name="transcriber-loopback",
+        ))
+    else:
+        audio_queue: queue.Queue = queue.Queue()
+        subtitle_buffer = SubtitleBuffer(max_lines=config.display.lines)
 
-    threads.append(threading.Thread(
-        target=start_transcription,
-        args=(audio_queue, subtitle_queue, subtitle_buffer, config, stop_event),
-        daemon=True,
-        name="transcriber",
-    ))
+        if config.audio.mode == "microphone":
+            threads.append(threading.Thread(
+                target=start_microphone_capture,
+                args=(audio_queue, config.audio.mic_device, stop_event),
+                daemon=True,
+                name="mic-capture",
+            ))
+            source = "mic"
+        else:
+            threads.append(threading.Thread(
+                target=start_loopback_capture,
+                args=(audio_queue, config.audio.loopback_device, stop_event),
+                daemon=True,
+                name="loopback-capture",
+            ))
+            source = "loopback"
+
+        threads.append(threading.Thread(
+            target=start_transcription,
+            args=(audio_queue, subtitle_queue, subtitle_buffer, config, stop_event),
+            kwargs={"source": source},
+            daemon=True,
+            name="transcriber",
+        ))
 
     for t in threads:
         t.start()
