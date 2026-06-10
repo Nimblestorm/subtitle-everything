@@ -17,6 +17,7 @@
     .row input[type=range] { flex: 1; }
     .note { font-size: 11px; color: #999; margin: 1px 0 0; }
     .restart { font-size: 11px; color: #b06000; margin: 1px 0 0; }
+    .warning { font-size: 11px; color: #b06000; background: #fff8e1; border: 1px solid #f0c040; padding: 6px 8px; border-radius: 4px; margin: 6px 0 0; }
     button { margin-top: 28px; padding: 9px 22px; font-size: 14px; cursor: pointer; }
     #status { margin-top: 10px; font-size: 13px; min-height: 18px; }
   </style>
@@ -50,6 +51,21 @@
   <input type="number" id="port" min="1024" max="65535">
   <p class="restart">Requires restart</p>
 
+  <label>Mic Color</label>
+  <input type="color" id="mic_color">
+  <label>Mic Position</label>
+  <select id="mic_position">
+    <option value="bottom">Bottom</option>
+    <option value="top">Top</option>
+  </select>
+  <label>Loopback Color</label>
+  <input type="color" id="loopback_color">
+  <label>Loopback Position</label>
+  <select id="loopback_position">
+    <option value="top">Top</option>
+    <option value="bottom">Bottom</option>
+  </select>
+
   <h2>Translation (LibreTranslate)</h2>
   <label><input type="checkbox" id="translation_enabled"> Enable Translation</label>
   <p class="restart">Requires restart</p>
@@ -80,14 +96,19 @@
   <p class="note">Device index or "default"</p>
 
   <h2>Transcription <span class="restart">— all require restart</span></h2>
-  <label>Model</label>
-  <select id="transcription_model">
+  <label>Mic Model</label>
+  <select id="mic_model">
     <option value="tiny">tiny</option>
     <option value="base">base</option>
-    <option value="small">small</option>
-    <option value="medium">medium</option>
-    <option value="large-v3">large-v3</option>
   </select>
+  <label>Loopback Model</label>
+  <select id="loopback_model">
+    <option value="tiny">tiny</option>
+    <option value="base">base</option>
+  </select>
+  <p id="dual_model_warning" class="warning" style="display:none">
+    Running two Whisper models simultaneously. Use "tiny" for one or both sources if memory usage is high.
+  </p>
   <label>Language (e.g. en, ja, auto)</label>
   <input type="text" id="transcription_language">
   <label>Device</label>
@@ -115,21 +136,35 @@
       document.getElementById('max_chars_per_line').value = cfg.display.max_chars_per_line;
       document.getElementById('fade_duration').value = cfg.display.fade_duration;
       document.getElementById('port').value = cfg.display.port;
+      document.getElementById('mic_color').value = cfg.display.mic_color;
+      document.getElementById('mic_position').value = cfg.display.mic_position;
+      document.getElementById('loopback_color').value = cfg.display.loopback_color;
+      document.getElementById('loopback_position').value = cfg.display.loopback_position;
       document.getElementById('translation_enabled').checked = cfg.translation.enabled;
       document.getElementById('translation_url').value = cfg.translation.url;
       document.getElementById('source_lang').value = cfg.translation.source_lang;
       document.getElementById('target_lang').value = cfg.translation.target_lang;
       document.getElementById('dual_language').checked = cfg.translation.dual_language;
       document.getElementById('audio_mode').value = cfg.audio.mode;
+      updateDualWarning(cfg.audio.mode);
       document.getElementById('mic_device').value = cfg.audio.mic_device;
       document.getElementById('loopback_device').value = cfg.audio.loopback_device;
-      document.getElementById('transcription_model').value = cfg.transcription.model;
+      document.getElementById('mic_model').value = cfg.transcription.mic_model;
+      document.getElementById('loopback_model').value = cfg.transcription.loopback_model;
       document.getElementById('transcription_language').value = cfg.transcription.language;
       document.getElementById('transcription_device').value = cfg.transcription.device;
     }
 
+    function updateDualWarning(mode) {
+      document.getElementById('dual_model_warning').style.display = mode === 'both' ? 'block' : 'none';
+    }
+
     document.getElementById('bg_opacity').addEventListener('input', e => {
       document.getElementById('bg_opacity_val').textContent = parseFloat(e.target.value).toFixed(2);
+    });
+
+    document.getElementById('audio_mode').addEventListener('change', e => {
+      updateDualWarning(e.target.value);
     });
 
     async function save() {
@@ -140,7 +175,8 @@
           loopback_device: document.getElementById('loopback_device').value,
         },
         transcription: {
-          model: document.getElementById('transcription_model').value,
+          mic_model: document.getElementById('mic_model').value,
+          loopback_model: document.getElementById('loopback_model').value,
           language: document.getElementById('transcription_language').value,
           device: document.getElementById('transcription_device').value,
         },
@@ -154,6 +190,10 @@
           bg_opacity: parseFloat(document.getElementById('bg_opacity').value),
           max_chars_per_line: parseInt(document.getElementById('max_chars_per_line').value),
           fade_duration: parseFloat(document.getElementById('fade_duration').value),
+          mic_color: document.getElementById('mic_color').value,
+          mic_position: document.getElementById('mic_position').value,
+          loopback_color: document.getElementById('loopback_color').value,
+          loopback_position: document.getElementById('loopback_position').value,
         },
         translation: {
           enabled: document.getElementById('translation_enabled').checked,
