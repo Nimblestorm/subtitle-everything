@@ -57,13 +57,12 @@
   <div id="subtitles-loopback" class="subtitle-container"></div>
   <script>
     const root = document.documentElement.style;
-    let fadeTimers = [];
+    const fadeTimers = { 'subtitles-mic': [], 'subtitles-loopback': [] };
     let currentFadeDuration = 0;
 
     function applyDisplayConfig(display) {
       root.setProperty('--font-family', display.font_family);
       root.setProperty('--font-size', display.font_size + 'px');
-      root.setProperty('--font-color', display.font_color);
       const op = display.bg_opacity !== undefined ? display.bg_opacity : 0.75;
       const hex = display.bg_color || '#000000';
       const r = parseInt(hex.slice(1,3),16);
@@ -114,8 +113,8 @@
     }
 
     function render(containerId, lines, translatedLines, fadeDuration) {
-      fadeTimers.forEach(clearTimeout);
-      fadeTimers = [];
+      (fadeTimers[containerId] || []).forEach(clearTimeout);
+      fadeTimers[containerId] = [];
 
       const container = document.getElementById(containerId);
       const allSpans = [];
@@ -131,7 +130,7 @@
         const spans = container.querySelectorAll('.line');
         spans.forEach(span => {
           const timer = setTimeout(() => span.classList.add('fading'), fadeDuration * 1000);
-          fadeTimers.push(timer);
+          fadeTimers[containerId].push(timer);
         });
       }
     }
