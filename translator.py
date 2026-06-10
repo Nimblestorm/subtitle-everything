@@ -1,5 +1,9 @@
+import logging
+
 import requests
 from config import TranslationConfig
+
+logger = logging.getLogger(__name__)
 
 
 def translate(text: str, config: TranslationConfig) -> str | None:

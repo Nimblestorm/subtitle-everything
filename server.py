@@ -1,11 +1,14 @@
 import asyncio
 import json
+import logging
 import queue
 import re
 import threading
 from pathlib import Path
 
 from aiohttp import web
+
+logger = logging.getLogger(__name__)
 
 from config import AppConfig, AudioConfig, TranscriptionConfig, DisplayConfig, TranslationConfig, build_config_section, validate_config, write_config
 

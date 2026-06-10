@@ -1,7 +1,10 @@
+import logging
 import re
 import sys
 from dataclasses import dataclass, field, fields as dc_fields
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 if sys.version_info >= (3, 11):
     import tomllib
@@ -199,7 +202,7 @@ def load_config(path: str = "config.toml") -> "AppConfig":
     config_path = Path(path)
     if not config_path.exists():
         config_path.write_text(DEFAULT_CONFIG, encoding="utf-8")
-        print(f"Created default config at {config_path}")
+        logger.info("Created default config at %s", config_path)
 
     with open(config_path, "rb") as f:
         data = tomllib.load(f)

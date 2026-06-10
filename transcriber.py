@@ -1,8 +1,11 @@
+import logging
 import queue
 import threading
 from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 from faster_whisper import WhisperModel
+
+logger = logging.getLogger(__name__)
 
 from buffer import SubtitleBuffer
 from config import AppConfig

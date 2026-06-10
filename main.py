@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import queue
 import threading
 
@@ -10,6 +11,8 @@ from config import load_config, AppConfig
 from server import create_app
 from transcriber import start_transcription
 
+logger = logging.getLogger(__name__)
+
 
 def _print_startup(config: AppConfig) -> None:
     mode = config.audio.mode
@@ -20,14 +23,14 @@ def _print_startup(config: AppConfig) -> None:
     else:
         audio_desc = "microphone + loopback"
 
-    print("\n[Subtitle Everything]")
-    print(f"  Model:    mic={config.transcription.mic_model} loopback={config.transcription.loopback_model} ({config.transcription.device})")
-    print(f"  Audio:    {audio_desc}")
-    print(f"  Language: {config.transcription.language}")
-    print(f"  Overlay:  http://localhost:{config.display.port}")
-    print(f"  Settings: http://localhost:{config.display.port}/settings")
-    print("\nAdd this URL as a Browser Source in OBS.")
-    print("Press Ctrl+C to stop.\n")
+    logger.info("[Subtitle Everything]")
+    logger.info("  Model:    mic=%s loopback=%s (%s)", config.transcription.mic_model, config.transcription.loopback_model, config.transcription.device)
+    logger.info("  Audio:    %s", audio_desc)
+    logger.info("  Language: %s", config.transcription.language)
+    logger.info("  Overlay:  http://localhost:%s", config.display.port)
+    logger.info("  Settings: http://localhost:%s/settings", config.display.port)
+    logger.info("Add this URL as a Browser Source in OBS.")
+    logger.info("Press Ctrl+C to stop.")
 
 
 def _resolve_device(config: AppConfig) -> AppConfig:
@@ -35,10 +38,10 @@ def _resolve_device(config: AppConfig) -> AppConfig:
         try:
             import torch
             if not torch.cuda.is_available():
-                print("Warning: CUDA requested but not available. Falling back to CPU.")
+                logger.warning("CUDA requested but not available. Falling back to CPU.")
                 config.transcription.device = "cpu"
         except ImportError:
-            print("Warning: torch not installed. Falling back to CPU.")
+            logger.warning("torch not installed. Falling back to CPU.")
             config.transcription.device = "cpu"
     return config
 
@@ -58,6 +61,11 @@ async def _run_server(config: AppConfig, subtitle_queue: queue.Queue) -> None:
 
 
 def main() -> None:
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        datefmt="%H:%M:%S",
+    )
     config = load_config()
     config = _resolve_device(config)
 
@@ -69,9 +77,9 @@ def main() -> None:
     threads: list[threading.Thread] = []
 
     if config.audio.mode == "both":
-        print(
-            'Warning: dual-source mode loads two Whisper models. '
-            'Consider using "tiny" for one or both sources if you experience high memory usage.\n'
+        logger.warning(
+            'Dual-source mode loads two Whisper models. '
+            'Consider using "tiny" for one or both sources if you experience high memory usage.'
         )
         mic_audio_queue: queue.Queue = queue.Queue()
         loopback_audio_queue: queue.Queue = queue.Queue()
@@ -141,11 +149,11 @@ def main() -> None:
     except KeyboardInterrupt:
         pass
     finally:
-        print("\nShutting down...")
+        logger.info("Shutting down...")
         stop_event.set()
         for t in threads:
             t.join(timeout=3)
-        print("Stopped.")
+        logger.info("Stopped.")
 
 
 if __name__ == "__main__":

@@ -1,3 +1,4 @@
+import logging
 import queue
 import threading
 import time
@@ -5,6 +6,8 @@ from typing import Union
 
 import numpy as np
 import sounddevice as sd
+
+logger = logging.getLogger(__name__)
 
 SAMPLE_RATE = 16000
 CHUNK_SECONDS = 3
