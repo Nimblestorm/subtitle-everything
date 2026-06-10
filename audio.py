@@ -23,8 +23,8 @@ def list_output_devices() -> list[tuple[int, str]]:
 
 def start_microphone_capture(
     audio_queue: queue.Queue,
-    device: Union[str, int] = "default",
-    stop_event: threading.Event = None,
+    device: Union[str, int],
+    stop_event: threading.Event,
 ) -> None:
     buffer: list[np.ndarray] = []
 
@@ -48,7 +48,7 @@ def start_microphone_capture(
         device=device_idx,
         callback=callback,
     ):
-        while not (stop_event and stop_event.is_set()):
+        while not stop_event.is_set():
             sd.sleep(100)
 
 
@@ -65,8 +65,8 @@ def _resample(audio: np.ndarray, from_rate: int, to_rate: int) -> np.ndarray:
 
 def start_loopback_capture(
     audio_queue: queue.Queue,
-    device: Union[str, int] = "default",
-    stop_event: threading.Event = None,
+    device: Union[str, int],
+    stop_event: threading.Event,
 ) -> None:
     try:
         import pyaudiowpatch as pyaudio
@@ -129,12 +129,12 @@ def start_loopback_capture(
             stream_callback=callback,
             frames_per_buffer=1024,
         )
-        stream.start_stream()
-
-        while not (stop_event and stop_event.is_set()):
-            time.sleep(0.1)
-
-        stream.stop_stream()
-        stream.close()
+        try:
+            stream.start_stream()
+            while not stop_event.is_set():
+                time.sleep(0.1)
+        finally:
+            stream.stop_stream()
+            stream.close()
     finally:
         pa.terminate()
