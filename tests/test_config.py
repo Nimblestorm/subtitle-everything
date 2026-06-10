@@ -163,6 +163,20 @@ def test_load_config_raises_on_invalid_mic_color(tmp_path):
         load_config(str(f))
 
 
+def test_load_config_raises_on_invalid_loopback_color(tmp_path):
+    f = tmp_path / "config.toml"
+    f.write_text('[display]\nloopback_color = "blue"\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="loopback_color"):
+        load_config(str(f))
+
+
+def test_load_config_raises_on_invalid_loopback_position(tmp_path):
+    f = tmp_path / "config.toml"
+    f.write_text('[display]\nloopback_position = "center"\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="loopback_position"):
+        load_config(str(f))
+
+
 def test_write_config_roundtrip_source_fields(tmp_path):
     from config import write_config, AppConfig
     cfg = AppConfig()
