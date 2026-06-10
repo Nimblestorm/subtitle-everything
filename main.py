@@ -4,7 +4,7 @@ import threading
 
 from aiohttp import web
 
-from audio import start_microphone_capture, start_loopback_capture, list_input_devices, list_output_devices
+from audio import start_microphone_capture, start_loopback_capture
 from buffer import SubtitleBuffer
 from config import load_config, AppConfig
 from server import create_app
