@@ -36,7 +36,7 @@ def start_transcription(
 ) -> None:
     compute_type = "float16" if config.transcription.device == "cuda" else "int8"
     model = WhisperModel(
-        config.transcription.model,
+        config.transcription.mic_model,
         device=config.transcription.device,
         compute_type=compute_type,
     )

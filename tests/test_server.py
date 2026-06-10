@@ -46,6 +46,12 @@ async def test_get_api_config_returns_json():
         data = await resp.json()
         assert data["display"]["font_family"] == "Arial"
         assert data["display"]["font_size"] == 36
+        assert data["display"]["mic_color"] == "#ffffff"
+        assert data["display"]["mic_position"] == "bottom"
+        assert data["display"]["loopback_color"] == "#00d4ff"
+        assert data["display"]["loopback_position"] == "top"
+        assert data["transcription"]["mic_model"] == "base"
+        assert data["transcription"]["loopback_model"] == "base"
         assert data["translation"]["target_lang"] == "es"
 
 
@@ -115,6 +121,21 @@ async def test_websocket_receives_config_on_connect():
             data = json.loads(msg.data)
             assert data["type"] == "config"
             assert data["display"]["font_family"] == "Arial"
+
+
+@pytest.mark.asyncio
+async def test_websocket_config_includes_source_fields():
+    from aiohttp.test_utils import TestClient, TestServer
+    app = await _make_app()
+    async with TestClient(TestServer(app)) as client:
+        async with client.ws_connect("/ws") as ws:
+            msg = await asyncio.wait_for(ws.receive(), timeout=2.0)
+            data = json.loads(msg.data)
+            assert data["type"] == "config"
+            assert data["display"]["mic_color"] == "#ffffff"
+            assert data["display"]["mic_position"] == "bottom"
+            assert data["display"]["loopback_color"] == "#00d4ff"
+            assert data["display"]["loopback_position"] == "top"
 
 
 @pytest.mark.asyncio

@@ -16,7 +16,8 @@ def _config_to_dict(config: AppConfig) -> dict:
             "loopback_device": config.audio.loopback_device,
         },
         "transcription": {
-            "model": config.transcription.model,
+            "mic_model": config.transcription.mic_model,
+            "loopback_model": config.transcription.loopback_model,
             "language": config.transcription.language,
             "device": config.transcription.device,
         },
@@ -30,6 +31,10 @@ def _config_to_dict(config: AppConfig) -> dict:
             "bg_opacity": config.display.bg_opacity,
             "max_chars_per_line": config.display.max_chars_per_line,
             "fade_duration": config.display.fade_duration,
+            "mic_color": config.display.mic_color,
+            "mic_position": config.display.mic_position,
+            "loopback_color": config.display.loopback_color,
+            "loopback_position": config.display.loopback_position,
         },
         "translation": {
             "enabled": config.translation.enabled,
@@ -51,6 +56,10 @@ def _display_config_message(config: AppConfig) -> dict:
             "bg_color": config.display.bg_color,
             "bg_opacity": config.display.bg_opacity,
             "fade_duration": config.display.fade_duration,
+            "mic_color": config.display.mic_color,
+            "mic_position": config.display.mic_position,
+            "loopback_color": config.display.loopback_color,
+            "loopback_position": config.display.loopback_position,
         },
     }
 

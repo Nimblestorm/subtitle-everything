@@ -21,7 +21,7 @@ def _print_startup(config: AppConfig) -> None:
         audio_desc = "microphone + loopback"
 
     print("\n[Subtitle Everything]")
-    print(f"  Model:    {config.transcription.model} ({config.transcription.device})")
+    print(f"  Model:    mic={config.transcription.mic_model}, loopback={config.transcription.loopback_model} ({config.transcription.device})")
     print(f"  Audio:    {audio_desc}")
     print(f"  Language: {config.transcription.language}")
     print(f"  Overlay:  http://localhost:{config.display.port}")
