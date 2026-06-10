@@ -22,7 +22,9 @@ async def test_get_root_serves_overlay():
     async with TestClient(TestServer(app)) as client:
         resp = await client.get("/")
         assert resp.status == 200
-        assert '<div id="subtitles">' in await resp.text()
+        text = await resp.text()
+        assert 'id="subtitles-mic"' in text
+        assert 'id="subtitles-loopback"' in text
 
 
 @pytest.mark.asyncio

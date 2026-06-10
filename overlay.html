@@ -9,22 +9,21 @@
       background: transparent;
       width: 100vw;
       height: 100vh;
-      display: flex;
-      align-items: flex-end;
-      justify-content: center;
-      padding-bottom: 40px;
       font-family: var(--font-family, Arial), sans-serif;
     }
 
-    #subtitles {
-      max-width: 90%;
+    .subtitle-container {
+      position: fixed;
+      left: 0;
+      right: 0;
+      width: 100%;
       text-align: center;
+      padding: 0 5%;
     }
 
     .line {
       display: block;
       background: var(--bg-rgba, rgba(0,0,0,0.75));
-      color: var(--font-color, #ffffff);
       font-size: var(--font-size, 36px);
       font-weight: bold;
       padding: 6px 18px;
@@ -33,6 +32,14 @@
       text-shadow: 1px 1px 3px rgba(0,0,0,0.9);
       max-width: fit-content;
       transition: opacity 0.5s ease;
+    }
+
+    #subtitles-mic .line {
+      color: var(--mic-color, #ffffff);
+    }
+
+    #subtitles-loopback .line {
+      color: var(--loopback-color, #00d4ff);
     }
 
     .line.translated {
@@ -46,11 +53,12 @@
   </style>
 </head>
 <body>
-  <div id="subtitles"></div>
+  <div id="subtitles-mic" class="subtitle-container"></div>
+  <div id="subtitles-loopback" class="subtitle-container"></div>
   <script>
-    const container = document.getElementById('subtitles');
     const root = document.documentElement.style;
     let fadeTimers = [];
+    let currentFadeDuration = 0;
 
     function applyDisplayConfig(display) {
       root.setProperty('--font-family', display.font_family);
@@ -63,6 +71,26 @@
       const b = parseInt(hex.slice(5,7),16);
       root.setProperty('--bg-rgba', `rgba(${r},${g},${b},${op})`);
       root.setProperty('--fade-duration', (display.fade_duration || 0) + 's');
+      root.setProperty('--mic-color', display.mic_color || '#ffffff');
+      root.setProperty('--loopback-color', display.loopback_color || '#00d4ff');
+
+      const micEl = document.getElementById('subtitles-mic');
+      if (display.mic_position === 'top') {
+        micEl.style.top = '40px';
+        micEl.style.bottom = 'auto';
+      } else {
+        micEl.style.bottom = '40px';
+        micEl.style.top = 'auto';
+      }
+
+      const loopbackEl = document.getElementById('subtitles-loopback');
+      if (display.loopback_position === 'top') {
+        loopbackEl.style.top = '40px';
+        loopbackEl.style.bottom = 'auto';
+      } else {
+        loopbackEl.style.bottom = '40px';
+        loopbackEl.style.top = 'auto';
+      }
     }
 
     function escapeHtml(text) {
@@ -71,10 +99,11 @@
         .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
 
-    function render(lines, translatedLines, fadeDuration) {
+    function render(containerId, lines, translatedLines, fadeDuration) {
       fadeTimers.forEach(clearTimeout);
       fadeTimers = [];
 
+      const container = document.getElementById(containerId);
       const allSpans = [];
       lines.forEach(line => {
         allSpans.push(`<span class="line">${escapeHtml(line)}</span>`);
@@ -93,8 +122,6 @@
       }
     }
 
-    let currentFadeDuration = 0;
-
     function connect() {
       const ws = new WebSocket(`ws://${location.host}/ws`);
 
@@ -105,7 +132,9 @@
             applyDisplayConfig(data.display);
             currentFadeDuration = data.display.fade_duration || 0;
           } else if (data.type === 'subtitle') {
-            render(data.lines || [], data.translated_lines || [], currentFadeDuration);
+            const source = data.source || 'mic';
+            const containerId = source === 'loopback' ? 'subtitles-loopback' : 'subtitles-mic';
+            render(containerId, data.lines || [], data.translated_lines || [], currentFadeDuration);
           }
         } catch (e) {
           console.error('Bad message', e);
