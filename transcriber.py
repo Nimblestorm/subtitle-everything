@@ -1,5 +1,6 @@
 import queue
 import threading
+from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 
 import numpy as np
@@ -67,7 +68,8 @@ def start_transcription(
         translated_lines: list[str] = []
 
         if config.translation.enabled:
-            translated = [translate(line, config.translation) for line in original_lines]
+            with ThreadPoolExecutor(max_workers=min(len(original_lines), 4)) as pool:
+                translated = list(pool.map(lambda line: translate(line, config.translation), original_lines))
             if config.translation.dual_language:
                 translated_lines = [t if t is not None else "" for t in translated]
                 lines = original_lines
