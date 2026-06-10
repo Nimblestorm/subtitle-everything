@@ -1,4 +1,5 @@
 import logging
+import math
 import re
 import sys
 from dataclasses import dataclass, field, fields as dc_fields
@@ -118,14 +119,14 @@ def validate_config(cfg: "AppConfig") -> None:
         raise ValueError(f"[translation] enabled must be a boolean, got {cfg.translation.enabled!r}")
     if cfg.display.lines < 1:
         raise ValueError(f"[display] lines must be >= 1, got {cfg.display.lines!r}")
-    if cfg.display.font_size < 8:
+    if not math.isfinite(cfg.display.font_size) or cfg.display.font_size < 8:
         raise ValueError(f"[display] font_size must be >= 8, got {cfg.display.font_size!r}")
     if not (0.0 <= cfg.display.bg_opacity <= 1.0):
         raise ValueError(f"[display] bg_opacity must be 0.0–1.0, got {cfg.display.bg_opacity!r}")
     if cfg.display.max_chars_per_line < 20:
         raise ValueError(f"[display] max_chars_per_line must be >= 20, got {cfg.display.max_chars_per_line!r}")
-    if cfg.display.fade_duration < 0.0:
-        raise ValueError(f"[display] fade_duration must be >= 0.0, got {cfg.display.fade_duration!r}")
+    if not math.isfinite(cfg.display.fade_duration) or cfg.display.fade_duration < 0.0:
+        raise ValueError(f"[display] fade_duration must be a non-negative number, got {cfg.display.fade_duration!r}")
     if not _HEX_COLOR_RE.match(cfg.display.font_color):
         raise ValueError(f"[display] font_color must be #rrggbb hex, got {cfg.display.font_color!r}")
     if not _HEX_COLOR_RE.match(cfg.display.bg_color):
@@ -153,10 +154,9 @@ def validate_config(cfg: "AppConfig") -> None:
     # Validate transcription.language
     if not cfg.transcription.language or not isinstance(cfg.transcription.language, str):
         raise ValueError("[transcription] language must be a non-empty string")
-    # Validate translation.url — must be http:// or https:// only
-    if cfg.translation.enabled:
-        if not re.match(r'^https?://', cfg.translation.url):
-            raise ValueError(f"[translation] url must start with http:// or https://, got {cfg.translation.url!r}")
+    # Validate translation.url — must be http:// or https:// only (when non-empty)
+    if cfg.translation.url and not re.match(r'^https?://', cfg.translation.url):
+        raise ValueError(f"[translation] url must start with http:// or https://, got {cfg.translation.url!r}")
 
 
 def write_config(config: "AppConfig", path: str = "config.toml") -> None:

@@ -170,6 +170,32 @@ async def test_post_api_config_rejects_cross_origin():
         assert resp.status == 403
 
 
+def test_is_local_origin_allows_localhost():
+    from server import _is_local_origin
+    from unittest.mock import MagicMock
+    req = MagicMock()
+    for origin in ["http://localhost:8765", "http://127.0.0.1:8765", "http://localhost"]:
+        req.headers = {"Origin": origin}
+        assert _is_local_origin(req), f"should allow {origin}"
+
+
+def test_is_local_origin_allows_missing_origin():
+    from server import _is_local_origin
+    from unittest.mock import MagicMock
+    req = MagicMock()
+    req.headers = {}
+    assert _is_local_origin(req)
+
+
+def test_is_local_origin_rejects_external():
+    from server import _is_local_origin
+    from unittest.mock import MagicMock
+    req = MagicMock()
+    for origin in ["https://evil.com", "http://192.168.1.1:8765", "null"]:
+        req.headers = {"Origin": origin}
+        assert not _is_local_origin(req), f"should reject {origin}"
+
+
 @pytest.mark.asyncio
 async def test_multiple_clients_receive_broadcast():
     from aiohttp.test_utils import TestClient, TestServer

@@ -207,7 +207,7 @@
           dual_language: document.getElementById('dual_language').checked,
         },
       };
-      const numericDisplayFields = { font_size: body.display.font_size, lines: body.display.lines, max_chars_per_line: body.display.max_chars_per_line, port: body.display.port };
+      const numericDisplayFields = { font_size: body.display.font_size, lines: body.display.lines, max_chars_per_line: body.display.max_chars_per_line, port: body.display.port, fade_duration: body.display.fade_duration };
       for (const [key, val] of Object.entries(numericDisplayFields)) {
         if (!Number.isFinite(val)) {
           const el = document.getElementById('status');

@@ -177,6 +177,43 @@ def test_load_config_raises_on_invalid_loopback_position(tmp_path):
         load_config(str(f))
 
 
+def test_load_config_raises_on_invalid_audio_mode(tmp_path):
+    f = tmp_path / "config.toml"
+    f.write_text('[audio]\nmode = "both_ears"\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="audio.*mode"):
+        load_config(str(f))
+
+
+def test_load_config_raises_on_invalid_transcription_device(tmp_path):
+    f = tmp_path / "config.toml"
+    f.write_text('[transcription]\ndevice = "tpu"\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="device"):
+        load_config(str(f))
+
+
+def test_load_config_raises_on_empty_language(tmp_path):
+    f = tmp_path / "config.toml"
+    f.write_text('[transcription]\nlanguage = ""\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="language"):
+        load_config(str(f))
+
+
+def test_load_config_raises_on_invalid_translation_url(tmp_path):
+    f = tmp_path / "config.toml"
+    f.write_text('[translation]\nenabled = false\nurl = "file:///etc/passwd"\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="url"):
+        load_config(str(f))
+
+
+def test_load_config_raises_on_nan_fade_duration(tmp_path):
+    from config import AppConfig, validate_config
+    import math
+    cfg = AppConfig()
+    cfg.display.fade_duration = float('nan')
+    with pytest.raises(ValueError, match="fade_duration"):
+        validate_config(cfg)
+
+
 def test_write_config_roundtrip_source_fields(tmp_path):
     from config import write_config, AppConfig
     cfg = AppConfig()
