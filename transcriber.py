@@ -1,8 +1,6 @@
 import queue
 import threading
 from concurrent.futures import ThreadPoolExecutor
-from typing import Optional
-
 import numpy as np
 from faster_whisper import WhisperModel
 
@@ -43,17 +41,20 @@ def start_transcription(
         device=config.transcription.device,
         compute_type=compute_type,
     )
-    lang: Optional[str] = None if config.transcription.language == "auto" else config.transcription.language
-
     while not stop_event.is_set():
         try:
             audio_chunk: np.ndarray = audio_queue.get(timeout=0.5)
         except queue.Empty:
             continue
 
+        # snapshot mutable config fields used in this iteration
+        max_chars = config.display.max_chars_per_line
+        lang_setting = config.transcription.language
+        translation_cfg = config.translation
+
         segments, _ = model.transcribe(
             audio_chunk,
-            language=lang,
+            language=None if lang_setting == "auto" else lang_setting,
             beam_size=1,
             vad_filter=True,
         )
@@ -61,16 +62,16 @@ def start_transcription(
         if not text:
             continue
 
-        for line in split_to_lines(text, config.display.max_chars_per_line):
+        for line in split_to_lines(text, max_chars):
             subtitle_buffer.push(line)
 
         original_lines = subtitle_buffer.get_lines()
         translated_lines: list[str] = []
 
-        if config.translation.enabled:
+        if translation_cfg.enabled:
             with ThreadPoolExecutor(max_workers=min(len(original_lines), 4)) as pool:
-                translated = list(pool.map(lambda line: translate(line, config.translation), original_lines))
-            if config.translation.dual_language:
+                translated = list(pool.map(lambda line: translate(line, translation_cfg), original_lines))
+            if translation_cfg.dual_language:
                 translated_lines = [t if t is not None else "" for t in translated]
                 lines = original_lines
             else:

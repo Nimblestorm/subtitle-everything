@@ -2,6 +2,7 @@ import asyncio
 import json
 import queue
 import re
+import threading
 from pathlib import Path
 
 from aiohttp import web
@@ -84,6 +85,7 @@ async def create_app(
     config_path: str = "config.toml",
 ) -> web.Application:
     clients: set[web.WebSocketResponse] = set()
+    config_lock = threading.Lock()
     base = Path(__file__).parent
     overlay_path = base / "overlay.html"
     settings_path = base / "settings.html"
@@ -136,11 +138,12 @@ async def create_app(
             or current["display"]["max_chars_per_line"] != new_dict["display"]["max_chars_per_line"]
         )
 
-        config.audio = new_cfg.audio
-        config.transcription = new_cfg.transcription
-        config.display = new_cfg.display
-        config.translation = new_cfg.translation
-        write_config(config, config_path)
+        with config_lock:
+            config.audio = new_cfg.audio
+            config.transcription = new_cfg.transcription
+            config.display = new_cfg.display
+            config.translation = new_cfg.translation
+            write_config(config, config_path)
 
         cfg_msg = json.dumps(_display_config_message(config))
         dead: set[web.WebSocketResponse] = set()
