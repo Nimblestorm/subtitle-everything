@@ -44,11 +44,12 @@ dual_language = false
 """
 
 _HEX_COLOR_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
+_FONT_FAMILY_RE = re.compile(r'^[A-Za-z0-9 ,\-]+$')
 
 
 def _toml_str(value: str) -> str:
     """Escape string values for safe TOML output."""
-    return value.replace("\\", "\\\\").replace('"', '\\"')
+    return value.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n").replace("\r", "\\r").replace("\x00", "")
 
 
 @dataclass
@@ -138,6 +139,21 @@ def validate_config(cfg: "AppConfig") -> None:
         raise ValueError(f"[display] mic_position must be 'top' or 'bottom', got {cfg.display.mic_position!r}")
     if cfg.display.loopback_position not in ("top", "bottom"):
         raise ValueError(f"[display] loopback_position must be 'top' or 'bottom', got {cfg.display.loopback_position!r}")
+    if not _FONT_FAMILY_RE.match(cfg.display.font_family):
+        raise ValueError(f"[display] font_family contains invalid characters: {cfg.display.font_family!r}")
+    # Validate audio.mode
+    if cfg.audio.mode not in ("microphone", "loopback", "both"):
+        raise ValueError(f"[audio] mode must be 'microphone', 'loopback', or 'both', got {cfg.audio.mode!r}")
+    # Validate transcription.device
+    if cfg.transcription.device not in ("cpu", "cuda"):
+        raise ValueError(f"[transcription] device must be 'cpu' or 'cuda', got {cfg.transcription.device!r}")
+    # Validate transcription.language
+    if not cfg.transcription.language or not isinstance(cfg.transcription.language, str):
+        raise ValueError("[transcription] language must be a non-empty string")
+    # Validate translation.url — must be http:// or https:// only
+    if cfg.translation.enabled:
+        if not re.match(r'^https?://', cfg.translation.url):
+            raise ValueError(f"[translation] url must start with http:// or https://, got {cfg.translation.url!r}")
 
 
 def write_config(config: "AppConfig", path: str = "config.toml") -> None:
