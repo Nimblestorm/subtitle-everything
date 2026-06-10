@@ -125,34 +125,38 @@
     async function load() {
       const res = await fetch('/api/config');
       if (!res.ok) { document.getElementById('status').textContent = 'Failed to load config'; return; }
-      const cfg = await res.json();
-      document.getElementById('font_family').value = cfg.display.font_family;
-      document.getElementById('font_size').value = cfg.display.font_size;
-      document.getElementById('font_color').value = cfg.display.font_color;
-      document.getElementById('bg_color').value = cfg.display.bg_color;
-      document.getElementById('bg_opacity').value = cfg.display.bg_opacity;
-      document.getElementById('bg_opacity_val').textContent = cfg.display.bg_opacity;
-      document.getElementById('lines').value = cfg.display.lines;
-      document.getElementById('max_chars_per_line').value = cfg.display.max_chars_per_line;
-      document.getElementById('fade_duration').value = cfg.display.fade_duration;
-      document.getElementById('port').value = cfg.display.port;
-      document.getElementById('mic_color').value = cfg.display.mic_color;
-      document.getElementById('mic_position').value = cfg.display.mic_position;
-      document.getElementById('loopback_color').value = cfg.display.loopback_color;
-      document.getElementById('loopback_position').value = cfg.display.loopback_position;
-      document.getElementById('translation_enabled').checked = cfg.translation.enabled;
-      document.getElementById('translation_url').value = cfg.translation.url;
-      document.getElementById('source_lang').value = cfg.translation.source_lang;
-      document.getElementById('target_lang').value = cfg.translation.target_lang;
-      document.getElementById('dual_language').checked = cfg.translation.dual_language;
-      document.getElementById('audio_mode').value = cfg.audio.mode;
-      updateDualWarning(cfg.audio.mode);
-      document.getElementById('mic_device').value = cfg.audio.mic_device;
-      document.getElementById('loopback_device').value = cfg.audio.loopback_device;
-      document.getElementById('mic_model').value = cfg.transcription.mic_model;
-      document.getElementById('loopback_model').value = cfg.transcription.loopback_model;
-      document.getElementById('transcription_language').value = cfg.transcription.language;
-      document.getElementById('transcription_device').value = cfg.transcription.device;
+      try {
+        const cfg = await res.json();
+        document.getElementById('font_family').value = cfg.display.font_family;
+        document.getElementById('font_size').value = cfg.display.font_size;
+        document.getElementById('font_color').value = cfg.display.font_color;
+        document.getElementById('bg_color').value = cfg.display.bg_color;
+        document.getElementById('bg_opacity').value = cfg.display.bg_opacity;
+        document.getElementById('bg_opacity_val').textContent = cfg.display.bg_opacity;
+        document.getElementById('lines').value = cfg.display.lines;
+        document.getElementById('max_chars_per_line').value = cfg.display.max_chars_per_line;
+        document.getElementById('fade_duration').value = cfg.display.fade_duration;
+        document.getElementById('port').value = cfg.display.port;
+        document.getElementById('mic_color').value = cfg.display.mic_color;
+        document.getElementById('mic_position').value = cfg.display.mic_position;
+        document.getElementById('loopback_color').value = cfg.display.loopback_color;
+        document.getElementById('loopback_position').value = cfg.display.loopback_position;
+        document.getElementById('translation_enabled').checked = cfg.translation.enabled;
+        document.getElementById('translation_url').value = cfg.translation.url;
+        document.getElementById('source_lang').value = cfg.translation.source_lang;
+        document.getElementById('target_lang').value = cfg.translation.target_lang;
+        document.getElementById('dual_language').checked = cfg.translation.dual_language;
+        document.getElementById('audio_mode').value = cfg.audio.mode;
+        updateDualWarning(cfg.audio.mode);
+        document.getElementById('mic_device').value = cfg.audio.mic_device;
+        document.getElementById('loopback_device').value = cfg.audio.loopback_device;
+        document.getElementById('mic_model').value = cfg.transcription.mic_model;
+        document.getElementById('loopback_model').value = cfg.transcription.loopback_model;
+        document.getElementById('transcription_language').value = cfg.transcription.language;
+        document.getElementById('transcription_device').value = cfg.transcription.device;
+      } catch (e) {
+        document.getElementById('status').textContent = 'Failed to parse config';
+      }
     }
 
     function updateDualWarning(mode) {
@@ -203,6 +207,15 @@
           dual_language: document.getElementById('dual_language').checked,
         },
       };
+      const numericDisplayFields = { font_size: body.display.font_size, lines: body.display.lines, max_chars_per_line: body.display.max_chars_per_line, port: body.display.port };
+      for (const [key, val] of Object.entries(numericDisplayFields)) {
+        if (!Number.isFinite(val)) {
+          const el = document.getElementById('status');
+          el.style.color = '#c00';
+          el.textContent = `${key.replace(/_/g, ' ')} must be a valid number`;
+          return;
+        }
+      }
       const res = await fetch('/api/config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
