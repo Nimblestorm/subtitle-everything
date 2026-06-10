@@ -60,6 +60,7 @@ def _display_config_message(config: AppConfig) -> dict:
             "mic_position": config.display.mic_position,
             "loopback_color": config.display.loopback_color,
             "loopback_position": config.display.loopback_position,
+            "audio_mode": config.audio.mode,
         },
     }
 

@@ -138,6 +138,7 @@ async def test_websocket_config_includes_source_fields():
             assert data["display"]["mic_position"] == "bottom"
             assert data["display"]["loopback_color"] == "#00d4ff"
             assert data["display"]["loopback_position"] == "top"
+            assert data["display"]["audio_mode"] == "microphone"
 
 
 @pytest.mark.asyncio

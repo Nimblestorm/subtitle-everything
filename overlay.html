@@ -75,6 +75,21 @@
       root.setProperty('--loopback-color', display.loopback_color || '#00d4ff');
 
       const micEl = document.getElementById('subtitles-mic');
+      const loopbackEl = document.getElementById('subtitles-loopback');
+
+      // Show/hide containers based on audio mode
+      if (display.audio_mode === 'loopback') {
+        micEl.style.display = 'none';
+        loopbackEl.style.display = '';
+      } else if (display.audio_mode === 'microphone') {
+        micEl.style.display = '';
+        loopbackEl.style.display = 'none';
+      } else {
+        // 'both' or missing — show both
+        micEl.style.display = '';
+        loopbackEl.style.display = '';
+      }
+
       if (display.mic_position === 'top') {
         micEl.style.top = '40px';
         micEl.style.bottom = 'auto';
@@ -83,7 +98,6 @@
         micEl.style.top = 'auto';
       }
 
-      const loopbackEl = document.getElementById('subtitles-loopback');
       if (display.loopback_position === 'top') {
         loopbackEl.style.top = '40px';
         loopbackEl.style.bottom = 'auto';
