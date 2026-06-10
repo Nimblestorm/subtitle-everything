@@ -1,11 +1,21 @@
 import asyncio
 import json
 import queue
+import re
 from pathlib import Path
 
 from aiohttp import web
 
 from config import AppConfig, AudioConfig, TranscriptionConfig, DisplayConfig, TranslationConfig, build_config_section, validate_config, write_config
+
+
+def _is_local_origin(request: web.Request) -> bool:
+    origin = request.headers.get("Origin") or request.headers.get("Referer") or ""
+    # Allow requests with no Origin (curl, direct API calls)
+    if not origin:
+        return True
+    # Allow only localhost origins
+    return bool(re.match(r'^https?://(localhost|127\.0\.0\.1)(:\d+)?(/|$)', origin))
 
 
 def _config_to_dict(config: AppConfig) -> dict:
@@ -93,6 +103,8 @@ async def create_app(
         return web.json_response(_config_to_dict(config))
 
     async def post_config(request: web.Request) -> web.Response:
+        if not _is_local_origin(request):
+            raise web.HTTPForbidden(reason="Cross-origin requests not allowed")
         try:
             body = await request.json()
         except Exception:

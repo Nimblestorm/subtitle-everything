@@ -158,6 +158,19 @@ async def test_websocket_receives_subtitle_broadcast():
 
 
 @pytest.mark.asyncio
+async def test_post_api_config_rejects_cross_origin():
+    from aiohttp.test_utils import TestClient, TestServer
+    app = await _make_app()
+    async with TestClient(TestServer(app)) as client:
+        resp = await client.post(
+            "/api/config",
+            json={},
+            headers={"Origin": "https://evil.com"},
+        )
+        assert resp.status == 403
+
+
+@pytest.mark.asyncio
 async def test_multiple_clients_receive_broadcast():
     from aiohttp.test_utils import TestClient, TestServer
     subtitle_queue = queue.Queue()
