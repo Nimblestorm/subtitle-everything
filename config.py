@@ -15,7 +15,8 @@ mic_device = "default"
 loopback_device = "default"
 
 [transcription]
-model = "base"
+mic_model = "base"
+loopback_model = "base"
 language = "en"
 device = "cpu"
 
@@ -29,6 +30,10 @@ bg_color = "#000000"
 bg_opacity = 0.75
 max_chars_per_line = 80
 fade_duration = 0.0
+mic_color = "#ffffff"
+mic_position = "bottom"
+loopback_color = "#00d4ff"
+loopback_position = "top"
 
 [translation]
 enabled = false
@@ -55,7 +60,8 @@ class AudioConfig:
 
 @dataclass
 class TranscriptionConfig:
-    model: str = "base"
+    mic_model: str = "base"
+    loopback_model: str = "base"
     language: str = "en"
     device: str = "cpu"
 
@@ -71,6 +77,10 @@ class DisplayConfig:
     bg_opacity: float = 0.75
     max_chars_per_line: int = 80
     fade_duration: float = 0.0
+    mic_color: str = "#ffffff"
+    mic_position: str = "bottom"
+    loopback_color: str = "#00d4ff"
+    loopback_position: str = "top"
 
 
 @dataclass
@@ -116,6 +126,18 @@ def validate_config(cfg: "AppConfig") -> None:
         raise ValueError(f"[display] font_color must be #rrggbb hex, got {cfg.display.font_color!r}")
     if not _HEX_COLOR_RE.match(cfg.display.bg_color):
         raise ValueError(f"[display] bg_color must be #rrggbb hex, got {cfg.display.bg_color!r}")
+    if cfg.transcription.mic_model not in ("tiny", "base"):
+        raise ValueError(f"[transcription] mic_model must be 'tiny' or 'base', got {cfg.transcription.mic_model!r}")
+    if cfg.transcription.loopback_model not in ("tiny", "base"):
+        raise ValueError(f"[transcription] loopback_model must be 'tiny' or 'base', got {cfg.transcription.loopback_model!r}")
+    if not _HEX_COLOR_RE.match(cfg.display.mic_color):
+        raise ValueError(f"[display] mic_color must be #rrggbb hex, got {cfg.display.mic_color!r}")
+    if not _HEX_COLOR_RE.match(cfg.display.loopback_color):
+        raise ValueError(f"[display] loopback_color must be #rrggbb hex, got {cfg.display.loopback_color!r}")
+    if cfg.display.mic_position not in ("top", "bottom"):
+        raise ValueError(f"[display] mic_position must be 'top' or 'bottom', got {cfg.display.mic_position!r}")
+    if cfg.display.loopback_position not in ("top", "bottom"):
+        raise ValueError(f"[display] loopback_position must be 'top' or 'bottom', got {cfg.display.loopback_position!r}")
 
 
 def write_config(config: "AppConfig", path: str = "config.toml") -> None:
@@ -127,7 +149,8 @@ def write_config(config: "AppConfig", path: str = "config.toml") -> None:
         f'loopback_device = "{_toml_str(a.loopback_device)}"\n'
         f'\n'
         f'[transcription]\n'
-        f'model = "{_toml_str(tr.model)}"\n'
+        f'mic_model = "{_toml_str(tr.mic_model)}"\n'
+        f'loopback_model = "{_toml_str(tr.loopback_model)}"\n'
         f'language = "{_toml_str(tr.language)}"\n'
         f'device = "{_toml_str(tr.device)}"\n'
         f'\n'
@@ -141,6 +164,10 @@ def write_config(config: "AppConfig", path: str = "config.toml") -> None:
         f'bg_opacity = {d.bg_opacity}\n'
         f'max_chars_per_line = {d.max_chars_per_line}\n'
         f'fade_duration = {d.fade_duration}\n'
+        f'mic_color = "{_toml_str(d.mic_color)}"\n'
+        f'mic_position = "{_toml_str(d.mic_position)}"\n'
+        f'loopback_color = "{_toml_str(d.loopback_color)}"\n'
+        f'loopback_position = "{_toml_str(d.loopback_position)}"\n'
         f'\n'
         f'[translation]\n'
         f'enabled = {"true" if t.enabled else "false"}\n'

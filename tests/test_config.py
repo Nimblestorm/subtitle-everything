@@ -8,7 +8,8 @@ def test_load_config_creates_default_file(tmp_path):
     cfg = load_config(str(config_file))
     assert config_file.exists()
     assert cfg.audio.mode == "microphone"
-    assert cfg.transcription.model == "base"
+    assert cfg.transcription.mic_model == "base"
+    assert cfg.transcription.loopback_model == "base"
     assert cfg.display.lines == 3
     assert cfg.display.port == 8765
     assert cfg.translation.enabled is False
@@ -17,12 +18,13 @@ def test_load_config_creates_default_file(tmp_path):
 def test_load_config_reads_existing_file(tmp_path):
     config_file = tmp_path / "config.toml"
     config_file.write_text(
-        '[audio]\nmode = "loopback"\n\n[transcription]\nmodel = "tiny"\nlanguage = "ja"\ndevice = "cpu"\n\n[display]\nlines = 2\nport = 9000\n\n[translation]\nenabled = false\n',
+        '[audio]\nmode = "loopback"\n\n[transcription]\nmic_model = "tiny"\nloopback_model = "base"\nlanguage = "ja"\ndevice = "cpu"\n\n[display]\nlines = 2\nport = 9000\n\n[translation]\nenabled = false\n',
         encoding="utf-8",
     )
     cfg = load_config(str(config_file))
     assert cfg.audio.mode == "loopback"
-    assert cfg.transcription.model == "tiny"
+    assert cfg.transcription.mic_model == "tiny"
+    assert cfg.transcription.loopback_model == "base"
     assert cfg.transcription.language == "ja"
     assert cfg.display.lines == 2
     assert cfg.display.port == 9000
@@ -33,7 +35,8 @@ def test_load_config_partial_file_uses_defaults(tmp_path):
     config_file.write_text('[audio]\nmode = "both"\n', encoding="utf-8")
     cfg = load_config(str(config_file))
     assert cfg.audio.mode == "both"
-    assert cfg.transcription.model == "base"  # default
+    assert cfg.transcription.mic_model == "base"  # default
+    assert cfg.transcription.loopback_model == "base"  # default
 
 
 def test_load_config_ignores_unknown_keys(tmp_path):
@@ -115,3 +118,66 @@ def test_write_config_roundtrip(tmp_path):
     assert loaded.display.font_size == 48
     assert loaded.display.font_color == "#ffff00"
     assert loaded.translation.target_lang == "fr"
+
+
+def test_transcription_config_new_defaults(tmp_path):
+    cfg = load_config(str(tmp_path / "config.toml"))
+    assert cfg.transcription.mic_model == "base"
+    assert cfg.transcription.loopback_model == "base"
+    assert not hasattr(cfg.transcription, "model")
+
+
+def test_display_source_defaults(tmp_path):
+    cfg = load_config(str(tmp_path / "config.toml"))
+    assert cfg.display.mic_color == "#ffffff"
+    assert cfg.display.mic_position == "bottom"
+    assert cfg.display.loopback_color == "#00d4ff"
+    assert cfg.display.loopback_position == "top"
+
+
+def test_load_config_raises_on_invalid_mic_model(tmp_path):
+    f = tmp_path / "config.toml"
+    f.write_text('[transcription]\nmic_model = "large"\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="mic_model"):
+        load_config(str(f))
+
+
+def test_load_config_raises_on_invalid_loopback_model(tmp_path):
+    f = tmp_path / "config.toml"
+    f.write_text('[transcription]\nloopback_model = "medium"\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="loopback_model"):
+        load_config(str(f))
+
+
+def test_load_config_raises_on_invalid_mic_position(tmp_path):
+    f = tmp_path / "config.toml"
+    f.write_text('[display]\nmic_position = "center"\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="mic_position"):
+        load_config(str(f))
+
+
+def test_load_config_raises_on_invalid_mic_color(tmp_path):
+    f = tmp_path / "config.toml"
+    f.write_text('[display]\nmic_color = "blue"\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="mic_color"):
+        load_config(str(f))
+
+
+def test_write_config_roundtrip_source_fields(tmp_path):
+    from config import write_config, AppConfig
+    cfg = AppConfig()
+    cfg.transcription.mic_model = "tiny"
+    cfg.transcription.loopback_model = "base"
+    cfg.display.mic_color = "#ff0000"
+    cfg.display.mic_position = "top"
+    cfg.display.loopback_color = "#00ff00"
+    cfg.display.loopback_position = "bottom"
+    p = str(tmp_path / "out.toml")
+    write_config(cfg, p)
+    loaded = load_config(p)
+    assert loaded.transcription.mic_model == "tiny"
+    assert loaded.transcription.loopback_model == "base"
+    assert loaded.display.mic_color == "#ff0000"
+    assert loaded.display.mic_position == "top"
+    assert loaded.display.loopback_color == "#00ff00"
+    assert loaded.display.loopback_position == "bottom"
